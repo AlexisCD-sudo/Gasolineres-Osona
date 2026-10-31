@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Descarrega els preus del Ministeri i desa data.json amb les gasolineres d'Osona."""
 import json
+import ssl
+import subprocess
 import time
 import unicodedata
 import urllib.request
