@@ -1,5 +1,5 @@
 {
-  "name": "Gasolineres Osona",
+  "name": "Gasolineres Barates",
   "short_name": "Gasolineres",
   "start_url": "./",
   "display": "standalone",
@@ -10,3 +10,4 @@
     {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"}
   ]
 }
+
