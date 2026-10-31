@@ -72,6 +72,7 @@
  .pinwrap{background:none;border:none}
  .pin{display:inline-block;transform:translate(-50%,-100%);background:#fff;color:#0f1f1d;border:2px solid #0f766e;border-radius:99px;padding:2px 8px;font:700 12px var(--disp);white-space:nowrap;box-shadow:0 1px 4px #0006}
  .pin.best{background:#fbbf24;border-color:#0a4f4a}
+ @media (prefers-color-scheme:dark){#map .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9)}}
  .pop b{font-family:var(--disp)}.pop a{font-weight:600}
  footer{margin-top:22px;padding:14px 0 calc(18px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);color:var(--mut);font-size:.8rem;text-align:center;line-height:1.6}
  [hidden]{display:none!important}
@@ -106,7 +107,7 @@
 <footer class="wrap">
  Fet per Alexis · 2026 · v1.1<br>
  Dades: Ministeri per a la Transició Ecològica<br>
- Mapa: © OpenStreetMap · © CARTO
+ Mapa: © OpenStreetMap
 </footer>
 <script>
 // ==PURE-START==
@@ -165,7 +166,7 @@ function opens(h,now){
 
 const $=id=>document.getElementById(id);
 let DATA=null, POS=null, ERR='', VIEW='list', SORT='preu';
-let MAP=null, LAYER=null, TILES=null, POSM=null;
+let MAP=null, LAYER=null, POSM=null;
 
 function guarda(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 function llegeix(k){try{return localStorage.getItem(k)}catch(e){return null}}
@@ -210,17 +211,12 @@ function pintaLlista({f,rows,buit}){
     </article>`}).join('')||'<div class="msg">'+esc(buit)+'</div>';
 }
 
-function tileUrl(){
-  const fosc=matchMedia('(prefers-color-scheme: dark)').matches;
-  return 'https://{s}.basemaps.cartocdn.com/'+(fosc?'dark_all':'light_all')+'/{z}/{x}/{y}{r}.png';
-}
 function iniciaMapa(){
   if(MAP)return true;
   if(!window.L){$('map').innerHTML='<div class="msg">No s\'ha pogut carregar el mapa. Comprova la connexió.</div>';return false}
   MAP=L.map('map').setView([40.2,-3.7],6);
-  TILES=L.tileLayer(tileUrl(),{subdomains:'abcd',maxZoom:19,attribution:'© OpenStreetMap · © CARTO'}).addTo(MAP);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(MAP);
   LAYER=L.layerGroup().addTo(MAP);
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>TILES.setUrl(tileUrl()));
   return true;
 }
 function pintaMapa({f,rows}){
