@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ca"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Gasolineres Osona</title>
+<title>Gasolineres Baratas</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0f766e">
@@ -9,48 +9,98 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="shortcut icon" href="icon-192.png">
 <style>
- :root{--bg:#f3f4f6;--card:#fff;--fg:#17181a;--mut:#6b7280;--ok:#15803d;--link:#2563eb}
- @media (prefers-color-scheme:dark){:root{--bg:#111315;--card:#1b1e21;--fg:#eceef0;--mut:#9aa1a9;--ok:#4ade80;--link:#7aa7ff}}
+ :root{--bg:#f3f4f6;--card:#fff;--fg:#17181a;--mut:#6b7280;--ok:#15803d;--link:#0f766e;--btn:#0f766e;--btnfg:#fff}
+ @media (prefers-color-scheme:dark){:root{--bg:#111315;--card:#1b1e21;--fg:#eceef0;--mut:#9aa1a9;--ok:#4ade80;--link:#5eead4;--btn:#14b8a6;--btnfg:#04201d}}
  body{font-family:system-ui,sans-serif;max-width:640px;margin:0 auto;padding:16px;background:var(--bg);color:var(--fg)}
  h1{font-size:1.3rem;margin:0 0 4px}.sub{color:var(--mut);font-size:.85rem;margin-bottom:12px}
- select{width:100%;padding:10px;font-size:1rem;border-radius:8px;border:1px solid var(--mut);background:var(--card);color:var(--fg);margin-bottom:12px}
+ .row{display:flex;gap:8px;margin-bottom:10px}
+ .row>*{flex:1;min-width:0}
+ select,button{padding:10px;font-size:1rem;border-radius:8px;border:1px solid var(--mut);background:var(--card);color:var(--fg)}
+ button.main{background:var(--btn);color:var(--btnfg);border:none;font-weight:600;width:100%;margin-bottom:10px}
  .card{background:var(--card);border-radius:12px;padding:12px 14px;margin-bottom:10px;display:flex;justify-content:space-between;gap:12px}
  .card.best{outline:2px solid var(--ok)}
  .nom{font-weight:600}.det{color:var(--mut);font-size:.85rem}
- .preu{font-size:1.3rem;font-weight:700;white-space:nowrap}
- a{color:var(--link);font-size:.85rem;text-decoration:none}
+ .dreta{text-align:right;white-space:nowrap}
+ .preu{font-size:1.3rem;font-weight:700}
+ a{color:var(--link);font-size:.9rem;text-decoration:none;font-weight:600}
+ .msg{color:var(--mut);padding:12px 0}
 </style></head><body>
-<h1>⛽ Gasolineres d'Osona</h1>
+<h1>⛽ Gasolineres baratas</h1>
 <div class="sub" id="upd">Carregant…</div>
-<select id="fuel">
- <option value="gasolina95">Gasolina 95</option>
- <option value="gasolina98">Gasolina 98</option>
- <option value="diesel">Dièsel</option>
- <option value="dieselplus">Dièsel Premium</option>
-</select>
+<button class="main" id="loc">📍 Utilitza la meva ubicació</button>
+<div class="row">
+ <select id="fuel">
+  <option value="7">Gasolina 95</option>
+  <option value="8">Gasolina 98</option>
+  <option value="9">Dièsel</option>
+  <option value="10">Dièsel Premium</option>
+ </select>
+ <select id="radi">
+  <option value="5">5 km</option>
+  <option value="10" selected>10 km</option>
+  <option value="20">20 km</option>
+  <option value="50">50 km</option>
+ </select>
+</div>
+<select id="prov" style="width:100%;margin-bottom:12px"><option value="">…o tria una província</option></select>
 <div id="list"></div>
 <script>
-let DATA=null;
+let DATA=null, POS=null, ERR='';
+const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function km(a,b,c,d){
+  const R=6371,r=Math.PI/180,dl=(c-a)*r,dn=(d-b)*r;
+  const x=Math.sin(dl/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(dn/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));
+}
 function render(){
-  const f=document.getElementById('fuel').value;
-  const rows=DATA.gasolineres.filter(g=>g.preus[f]!=null).sort((a,b)=>a.preus[f]-b.preus[f]);
-  document.getElementById('upd').textContent='Dades del Ministeri: '+DATA.actualitzat;
-  document.getElementById('list').innerHTML=rows.map((g,i)=>`
+  if(!DATA)return;
+  $('upd').textContent='Dades del Ministeri: '+DATA.actualitzat;
+  const f=+$('fuel').value, radi=+$('radi').value, prov=$('prov').value;
+  let rows=[], buit='';
+  if(POS){
+    rows=DATA.e.filter(e=>e[f]!=null).map(e=>({e,d:km(POS.lat,POS.lon,e[5],e[6])})).filter(x=>x.d<=radi);
+    buit='Cap gasolinera en '+radi+' km. Prova un radi més gran.';
+  }else if(prov!==''){
+    rows=DATA.e.filter(e=>e[f]!=null&&e[3]==+prov).map(e=>({e,d:null}));
+    buit='Cap resultat en aquesta província.';
+  }else{
+    $('list').innerHTML='<div class="msg">'+esc(ERR||'Toca el botó per veure les més barates a prop teu.')+'</div>';
+    return;
+  }
+  rows.sort((a,b)=>a.e[f]-b.e[f]||(a.d??0)-(b.d??0));
+  rows=rows.slice(0,40);
+  $('list').innerHTML=rows.map((x,i)=>{const e=x.e;return `
     <div class="card ${i==0?'best':''}">
-      <div><div class="nom">${esc(g.nom)}</div>
-      <div class="det">${esc(g.adreca)}, ${esc(g.municipi)}</div>
-      <div class="det">${esc(g.horari)}</div>
-      ${g.lat?`<a target="_blank" rel="noopener" href="https://www.google.com/maps?q=${g.lat},${g.lon}">Com arribar-hi</a>`:''}</div>
-      <div class="preu">${g.preus[f].toFixed(3)} €</div>
-    </div>`).join('')||'Cap resultat';
+      <div><div class="nom">${esc(e[0])}</div>
+      <div class="det">${esc(e[1])}, ${esc(e[2])}</div>
+      <div class="det">${esc(e[4])}</div>
+      <a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${e[5]},${e[6]}">Com arribar-hi</a></div>
+      <div class="dreta"><div class="preu">${e[f].toFixed(3)} €</div>
+      ${x.d==null?'':`<div class="det">${x.d.toFixed(1)} km</div>`}</div>
+    </div>`}).join('')||'<div class="msg">'+esc(buit)+'</div>';
 }
-async function load(){
+function demanaUbicacio(){
+  if(!navigator.geolocation){ERR='Aquest navegador no pot donar la ubicació. Tria una província.';render();return}
+  $('list').innerHTML='<div class="msg">Buscant la teva ubicació…</div>';
+  navigator.geolocation.getCurrentPosition(p=>{
+    POS={lat:p.coords.latitude,lon:p.coords.longitude};ERR='';$('prov').value='';render();
+  },()=>{
+    POS=null;ERR='No he pogut obtenir la ubicació. Permet-la al navegador o tria una província.';render();
+  },{enableHighAccuracy:false,timeout:15000,maximumAge:300000});
+}
+async function carrega(){
   try{
-    const r=await fetch('data.json?'+Date.now()); if(!r.ok) throw new Error('data.json no disponible encara');
-    DATA=await r.json(); render();
-  }catch(e){document.getElementById('upd').textContent='Error: '+e.message}
+    const r=await fetch('data.json?'+Date.now());
+    if(!r.ok)throw new Error('data.json no disponible encara');
+    DATA=await r.json();
+    $('prov').innerHTML='<option value="">…o tria una província</option>'+
+      DATA.ordre.map(i=>`<option value="${i}">${esc(DATA.provincies[i])}</option>`).join('');
+    render();
+  }catch(e){$('upd').textContent='Error: '+e.message}
 }
-document.getElementById('fuel').onchange=()=>DATA&&render();
-load(); setInterval(load,600000);
+$('loc').onclick=demanaUbicacio;
+$('fuel').onchange=render;$('radi').onchange=render;
+$('prov').onchange=()=>{if($('prov').value!==''){POS=null}render()};
+carrega().then(demanaUbicacio);
 </script></body></html>

@@ -1,38 +1,20 @@
 #!/usr/bin/env python3
-"""Descarrega els preus del Ministeri i desa data.json amb les gasolineres d'Osona."""
+"""Descarrega els preus de tota Espanya del Ministeri i desa data.json en format compacte."""
 import json
 import ssl
 import subprocess
 import time
-import unicodedata
 import urllib.request
 
 API = ("https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/"
-       "PreciosCarburantes/EstacionesTerrestres/FiltroProvincia/08")
+       "PreciosCarburantes/EstacionesTerrestres/")
 
-MUNICIPIS = [
-    "Vic", "Manlleu", "Torello", "Centelles", "Tona", "Taradell", "Seva", "Gurb",
-    "Calldetenes", "Folgueroles", "Roda de Ter", "L'Esquirol", "Santa Maria de Corco",
-    "Sant Hipolit de Voltrega", "Sant Quirze de Besora", "Sant Julia de Vilatorta",
-    "Les Masies de Voltrega", "Les Masies de Roda", "Sant Vicenc de Torello",
-    "Santa Eulalia de Riuprimer", "Sant Pere de Torello", "Malla", "Montesquiu",
-    "Muntanyola", "Orista", "Olost", "Perafita", "Sant Bartomeu del Grau",
-    "Sant Marti de Centelles", "Santa Cecilia de Voltrega", "Sant Sadurni d'Osormort",
-    "Sora", "Collsuspina", "Les Masies", "Cantonigros", "Sant Agusti de Lluces",
-    "Lluca", "Espinelves", "Vilanova de Sau", "El Brull", "Balenya", "Prats de Lluces",
+FUELS = [
+    "Precio Gasolina 95 E5",
+    "Precio Gasolina 98 E5",
+    "Precio Gasoleo A",
+    "Precio Gasoleo Premium",
 ]
-
-FUELS = {
-    "gasolina95": "Precio Gasolina 95 E5",
-    "gasolina98": "Precio Gasolina 98 E5",
-    "diesel": "Precio Gasoleo A",
-    "dieselplus": "Precio Gasoleo Premium",
-}
-
-
-def norm(s):
-    s = unicodedata.normalize("NFD", s or "")
-    return "".join(c for c in s if unicodedata.category(c) != "Mn").lower().strip()
 
 
 def num(v):
@@ -53,13 +35,13 @@ def fetch():
     req = urllib.request.Request(API, headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"})
     for attempt in range(3):
         try:
-            with urllib.request.urlopen(req, timeout=60, context=ctx) as r:
+            with urllib.request.urlopen(req, timeout=90, context=ctx) as r:
                 return json.loads(r.read().decode("utf-8-sig"))
         except Exception as ex:
             print("urllib intent", attempt + 1, "ha fallat:", ex)
         try:
             out = subprocess.run(
-                ["curl", "-sS", "--fail", "--tlsv1.2", "-A", "Mozilla/5.0", "-m", "90", API],
+                ["curl", "-sS", "--fail", "--tlsv1.2", "-A", "Mozilla/5.0", "-m", "120", API],
                 capture_output=True, check=True)
             return json.loads(out.stdout.decode("utf-8-sig"))
         except Exception as ex:
@@ -70,22 +52,32 @@ def fetch():
 
 def main():
     raw = fetch()
-    munis = {norm(m) for m in MUNICIPIS}
-    out = []
+    provincies = []
+    estacions = []
     for e in raw.get("ListaEESSPrecio", []):
-        if norm(e.get("Municipio")) in munis or norm(e.get("Localidad")) in munis:
-            out.append({
-                "nom": e.get("Rótulo", "").title(),
-                "adreca": e.get("Dirección", "").title(),
-                "municipi": e.get("Municipio", "").title(),
-                "horari": e.get("Horario", ""),
-                "lat": num(e.get("Latitud")),
-                "lon": num(e.get("Longitud (WGS84)")),
-                "preus": {k: num(e.get(v)) for k, v in FUELS.items()},
-            })
+        lat = num(e.get("Latitud"))
+        lon = num(e.get("Longitud (WGS84)"))
+        if lat is None or lon is None:
+            continue
+        prov = (e.get("Provincia") or "").title()
+        if prov not in provincies:
+            provincies.append(prov)
+        estacions.append([
+            (e.get("Rótulo") or "").title(),
+            (e.get("Dirección") or "").title(),
+            (e.get("Municipio") or "").title(),
+            provincies.index(prov),
+            e.get("Horario") or "",
+            round(lat, 5),
+            round(lon, 5),
+        ] + [num(e.get(f)) for f in FUELS])
+    # índex de província ordenat alfabèticament per al desplegable
+    ordre = sorted(range(len(provincies)), key=lambda i: provincies[i])
     with open("data.json", "w", encoding="utf-8") as f:
-        json.dump({"actualitzat": raw.get("Fecha"), "gasolineres": out}, f, ensure_ascii=False)
-    print(len(out), "gasolineres d'Osona desades")
+        json.dump({"actualitzat": raw.get("Fecha"), "provincies": provincies,
+                   "ordre": ordre, "e": estacions},
+                  f, ensure_ascii=False, separators=(",", ":"))
+    print(len(estacions), "gasolineres desades")
 
 
 if __name__ == "__main__":
