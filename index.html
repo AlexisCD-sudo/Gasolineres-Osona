@@ -42,7 +42,7 @@
   <option value="50">50 km</option>
  </select>
 </div>
-<select id="prov" style="width:100%;margin-bottom:12px"><option value="">…o tria una província</option></select>
+<select id="prov" style="width:100%;margin-bottom:12px"><option value="">…o tria una comarca o província</option></select>
 <div id="list"></div>
 <script>
 let DATA=null, POS=null, ERR='';
@@ -62,8 +62,9 @@ function render(){
     rows=DATA.e.filter(e=>e[f]!=null).map(e=>({e,d:km(POS.lat,POS.lon,e[5],e[6])})).filter(x=>x.d<=radi);
     buit='Cap gasolinera en '+radi+' km. Prova un radi més gran.';
   }else if(prov!==''){
-    rows=DATA.e.filter(e=>e[f]!=null&&e[3]==+prov).map(e=>({e,d:null}));
-    buit='Cap resultat en aquesta província.';
+    const [t,i]=prov.split(':'), k=t==='c'?11:3;
+    rows=DATA.e.filter(e=>e[f]!=null&&e[k]==+i).map(e=>({e,d:null}));
+    buit='Cap resultat en aquesta zona.';
   }else{
     $('list').innerHTML='<div class="msg">'+esc(ERR||'Toca el botó per veure les més barates a prop teu.')+'</div>';
     return;
@@ -94,8 +95,12 @@ async function carrega(){
     const r=await fetch('data.json?'+Date.now());
     if(!r.ok)throw new Error('data.json no disponible encara');
     DATA=await r.json();
-    $('prov').innerHTML='<option value="">…o tria una província</option>'+
-      DATA.ordre.map(i=>`<option value="${i}">${esc(DATA.provincies[i])}</option>`).join('');
+    const com=DATA.comarques||[];
+    $('prov').innerHTML='<option value="">…o tria una comarca o província</option>'+
+      (com.length?'<optgroup label="Comarques de Catalunya">'+
+        com.map((c,i)=>`<option value="c:${i}">${esc(c)}</option>`).join('')+'</optgroup>':'')+
+      '<optgroup label="Províncies">'+
+        DATA.ordre.map(i=>`<option value="p:${i}">${esc(DATA.provincies[i])}</option>`).join('')+'</optgroup>';
     render();
   }catch(e){$('upd').textContent='Error: '+e.message}
 }
