@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ca"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Gasolineres Barates</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -8,90 +8,264 @@
 <meta name="apple-mobile-web-app-title" content="Gasolineres">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="shortcut icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;700;800&family=Figtree:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 <style>
- :root{--bg:#f3f4f6;--card:#fff;--fg:#17181a;--mut:#6b7280;--ok:#15803d;--link:#0f766e;--btn:#0f766e;--btnfg:#fff}
- @media (prefers-color-scheme:dark){:root{--bg:#111315;--card:#1b1e21;--fg:#eceef0;--mut:#9aa1a9;--ok:#4ade80;--link:#5eead4;--btn:#14b8a6;--btnfg:#04201d}}
- body{font-family:system-ui,sans-serif;max-width:640px;margin:0 auto;padding:16px;background:var(--bg);color:var(--fg)}
- h1{font-size:1.3rem;margin:0 0 4px}.sub{color:var(--mut);font-size:.85rem;margin-bottom:12px}
- .row{display:flex;gap:8px;margin-bottom:10px}
- .row>*{flex:1;min-width:0}
- select,button{padding:10px;font-size:1rem;border-radius:8px;border:1px solid var(--mut);background:var(--card);color:var(--fg)}
- button.main{background:var(--btn);color:var(--btnfg);border:none;font-weight:600;width:100%;margin-bottom:10px}
- .card{background:var(--card);border-radius:12px;padding:12px 14px;margin-bottom:10px;display:flex;justify-content:space-between;gap:12px}
- .card.best{outline:2px solid var(--ok)}
- .nom{font-weight:600}.det{color:var(--mut);font-size:.85rem}
- .dreta{text-align:right;white-space:nowrap}
- .preu{font-size:1.3rem;font-weight:700}
- a{color:var(--link);font-size:.9rem;text-decoration:none;font-weight:600}
- .msg{color:var(--mut);padding:12px 0}
- footer{margin-top:24px;padding-top:12px;border-top:1px solid var(--mut);color:var(--mut);font-size:.8rem;text-align:center;line-height:1.5}
+ /* Disseny: capçalera verd-blau amb la icona, targetes netes, la més barata en destacat ambre */
+ :root{
+  --bg:#e9f1ef;--surface:#fff;--ink:#0f1f1d;--mut:#587370;--line:#d3e1de;--chip:#dcebe8;
+  --brand:#0f766e;--on-brand:#fff;--hero1:#0f766e;--hero2:#0a4f4a;--amber:#fbbf24;
+  --good:#15803d;--bad:#b42318;
+  --disp:'Bricolage Grotesque',system-ui,sans-serif;--body:'Figtree',system-ui,sans-serif;
+ }
+ @media (prefers-color-scheme:dark){:root{
+  --bg:#0a1413;--surface:#122120;--ink:#e7f2f0;--mut:#8fa9a5;--line:#1f3532;--chip:#183230;
+  --brand:#2dd4bf;--on-brand:#04201d;--good:#4ade80;--bad:#f87171;}}
+ *{box-sizing:border-box}
+ body{margin:0;font-family:var(--body);background:var(--bg);color:var(--ink);line-height:1.4;-webkit-text-size-adjust:100%}
+ .wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+ header.top{background:linear-gradient(135deg,var(--hero1),var(--hero2));color:#fff;padding-top:calc(18px + env(safe-area-inset-top,0px));padding-bottom:22px;border-radius:0 0 26px 26px}
+ header.top .wrap{display:flex;align-items:center;gap:14px}
+ .logo{width:54px;height:54px;border-radius:14px;flex:none;box-shadow:0 2px 8px #0004}
+ h1{font-family:var(--disp);font-size:1.55rem;font-weight:800;margin:0;line-height:1.1;letter-spacing:-.01em}
+ .sub{font-size:.82rem;opacity:.85;margin-top:3px}
+ main{padding-top:16px;padding-bottom:8px;display:flex;flex-direction:column;gap:12px}
+ .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px}
+ .row{display:flex;gap:8px}.row>*{flex:1;min-width:0}
+ select,.btn{font:inherit;font-size:.95rem;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+ select{width:100%}
+ button.main{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--brand);color:var(--on-brand);border:none;font-weight:600;padding:12px;border-radius:12px;font:inherit;font-weight:600;cursor:pointer}
+ button.main svg{width:18px;height:18px}
+ .seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+ .seg button{flex:1;font:inherit;font-size:.9rem;padding:7px 8px;border:none;border-radius:8px;background:none;color:var(--mut);cursor:pointer}
+ .seg button.on{background:var(--brand);color:var(--on-brand);font-weight:600}
+ .seg button:disabled{opacity:.4;cursor:default}
+ label.chk{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--mut)}
+ label.chk input{width:18px;height:18px;accent-color:var(--brand)}
+ .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;justify-content:space-between;gap:14px}
+ .card+.card{margin-top:10px}
+ .card.best{background:linear-gradient(135deg,var(--hero1),var(--hero2));color:#fff;border:none}
+ .eyebrow{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--amber);margin-bottom:2px}
+ .info{min-width:0}
+ .nom{font-family:var(--disp);font-weight:700;font-size:1.05rem;overflow-wrap:anywhere}
+ .det{font-size:.85rem;color:var(--mut);overflow-wrap:anywhere}
+ .card.best .det{color:#cfe9e5}
+ .meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 0}
+ .tag{font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--chip)}
+ .tag.ok{color:var(--good)}.tag.no{color:var(--bad)}
+ .card.best .tag{background:#ffffff26;color:#fff}
+ .hor{font-size:.78rem;color:var(--mut);overflow-wrap:anywhere}
+ .card.best .hor{color:#cfe9e5}
+ a.go{font-size:.9rem;font-weight:600;color:var(--brand);text-decoration:none}
+ .card.best a.go{color:var(--amber)}
+ .dreta{text-align:right;white-space:nowrap;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+ .preu{font-family:var(--disp);font-weight:800;font-size:1.6rem;font-variant-numeric:tabular-nums;line-height:1}
+ .preu small{font-size:.8rem;font-weight:600;opacity:.75}
+ .card.best .preu{color:var(--amber)}
+ .dist{font-size:.85rem;color:var(--mut);font-variant-numeric:tabular-nums}
+ .card.best .dist{color:#cfe9e5}
+ .msg{color:var(--mut);padding:14px 4px;text-align:center}
+ #map{height:min(66vh,520px);min-height:320px;border-radius:16px;border:1px solid var(--line);overflow:hidden}
+ .pinwrap{background:none;border:none}
+ .pin{display:inline-block;transform:translate(-50%,-100%);background:#fff;color:#0f1f1d;border:2px solid #0f766e;border-radius:99px;padding:2px 8px;font:700 12px var(--disp);white-space:nowrap;box-shadow:0 1px 4px #0006}
+ .pin.best{background:#fbbf24;border-color:#0a4f4a}
+ .pop b{font-family:var(--disp)}.pop a{font-weight:600}
+ footer{margin-top:22px;padding:14px 0 calc(18px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);color:var(--mut);font-size:.8rem;text-align:center;line-height:1.6}
+ [hidden]{display:none!important}
 </style></head><body>
-<h1>⛽ Gasolineres barates</h1>
-<div class="sub" id="upd">Carregant…</div>
-<button class="main" id="loc">📍 Utilitza la meva ubicació</button>
-<div class="row">
- <select id="fuel">
-  <option value="7">Gasolina 95</option>
-  <option value="8">Gasolina 98</option>
-  <option value="9">Dièsel</option>
-  <option value="10">Dièsel Premium</option>
- </select>
- <select id="radi">
-  <option value="5">5 km</option>
-  <option value="10" selected>10 km</option>
-  <option value="20">20 km</option>
-  <option value="50">50 km</option>
- </select>
-</div>
-<select id="prov" style="width:100%;margin-bottom:12px"><option value="">…o tria una comarca o província</option></select>
-<div id="list"></div>
-<footer>
- Fet per Alexis · 2026 · v1.0<br>
+<header class="top"><div class="wrap">
+ <img class="logo" src="apple-touch-icon.png" alt="" width="54" height="54">
+ <div><h1>Gasolineres barates</h1><div class="sub" id="upd">Carregant…</div></div>
+</div></header>
+<main class="wrap">
+ <section class="panel">
+  <button class="main" id="loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Utilitza la meva ubicació</button>
+  <div class="row">
+   <select id="fuel" aria-label="Combustible">
+    <option value="7">Gasolina 95</option><option value="8">Gasolina 98</option>
+    <option value="9">Dièsel</option><option value="10">Dièsel Premium</option>
+   </select>
+   <select id="radi" aria-label="Radi">
+    <option value="5">5 km</option><option value="10" selected>10 km</option>
+    <option value="20">20 km</option><option value="50">50 km</option>
+   </select>
+  </div>
+  <select id="prov" aria-label="Comarca o província"><option value="">…o tria una comarca o província</option></select>
+  <div class="row" style="align-items:center">
+   <div class="seg" role="group" aria-label="Ordre"><button id="sPreu" class="on">Preu</button><button id="sDist">Distància</button></div>
+   <label class="chk"><input type="checkbox" id="open"> Només obertes</label>
+  </div>
+ </section>
+ <div class="seg" role="group" aria-label="Vista"><button id="vList" class="on">Llista</button><button id="vMap">Mapa</button></div>
+ <div id="list"></div>
+ <div id="mapbox" hidden><div id="map"></div></div>
+</main>
+<footer class="wrap">
+ Fet per Alexis · 2026 · v1.1<br>
+ Dades: Ministeri per a la Transició Ecològica<br>
+ Mapa: © OpenStreetMap · © CARTO
 </footer>
 <script>
-let DATA=null, POS=null, ERR='';
-const $=id=>document.getElementById(id);
+// ==PURE-START==
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=p=>p.toFixed(3).replace('.',',');
 function km(a,b,c,d){
   const R=6371,r=Math.PI/180,dl=(c-a)*r,dn=(d-b)*r;
   const x=Math.sin(dl/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(dn/2)**2;
   return 2*R*Math.asin(Math.sqrt(x));
 }
+const DL='LMXJVSD', JSDAY=[1,2,3,4,5,6,0];
+function dies(txt){
+  const out=new Set();
+  for(const tk of txt.split(/,|\sy\s/i)){
+    const m=tk.trim().toUpperCase().match(/^([LMXJVSD])(?:\s*-\s*([LMXJVSD]))?$/);
+    if(!m)return null;
+    let i=DL.indexOf(m[1]); const j=m[2]?DL.indexOf(m[2]):i;
+    for(let n=0;n<8;n++){out.add(JSDAY[i]); if(i===j)break; i=(i+1)%7;}
+  }
+  return out;
+}
+function parseH(h){
+  if(!h)return null;
+  const segs=[];
+  for(const part of h.split(';')){
+    if(!part.trim())continue;
+    const m=part.match(/^\s*([LMXJVSD\s,\-y]+?)\s*:\s*(.*)$/i);
+    if(!m)return null;
+    const d=dies(m[1]); if(!d)return null;
+    const t=m[2]; let r=[];
+    if(/24\s*H/i.test(t)) r=[[0,1440]];
+    else{
+      const re=/(\d{1,2})[:.](\d{2})\s*-\s*(\d{1,2})[:.](\d{2})/g; let x;
+      while((x=re.exec(t))){
+        const a=+x[1]*60+ +x[2]; let b=+x[3]*60+ +x[4];
+        if(b===0&&a>0)b=1440;
+        r.push([a,b]);
+      }
+      if(!r.length&&!/cerrad|tancat/i.test(t))return null;
+    }
+    segs.push({days:d,r});
+  }
+  return segs.length?segs:null;
+}
+function opens(h,now){
+  const p=parseH(h); if(!p)return null;
+  const d=now.getDay(), y=(d+6)%7, t=now.getHours()*60+now.getMinutes();
+  let covered=false, open=false;
+  for(const s of p){
+    if(s.days.has(d)){covered=true;for(const [a,b] of s.r){if(a<=b){if(t>=a&&t<b)open=true}else if(t>=a)open=true}}
+    if(s.days.has(y))for(const [a,b] of s.r){if(a>b&&t<b)open=true}
+  }
+  return open?true:(covered?false:null);
+}
+// ==PURE-END==
+
+const $=id=>document.getElementById(id);
+let DATA=null, POS=null, ERR='', VIEW='list', SORT='preu';
+let MAP=null, LAYER=null, TILES=null, POSM=null;
+
+function guarda(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function llegeix(k){try{return localStorage.getItem(k)}catch(e){return null}}
+
+function calcula(){
+  const f=+$('fuel').value, radi=+$('radi').value, z=$('prov').value, nomesObertes=$('open').checked;
+  const ara=new Date();
+  let base, buit;
+  if(POS){
+    base=DATA.e.filter(e=>e[f]!=null).map(e=>({e,d:km(POS.lat,POS.lon,e[5],e[6])})).filter(x=>x.d<=radi);
+    buit='Cap gasolinera en '+radi+' km. Prova un radi més gran.';
+  }else if(z!==''){
+    const [t,i]=z.split(':'), k=t==='c'?11:3;
+    base=DATA.e.filter(e=>e[f]!=null&&e[k]==+i).map(e=>({e,d:null}));
+    buit='Cap resultat en aquesta zona.';
+  }else return {f,rows:[],buit:ERR||'Toca el botó per veure les més barates a prop teu.'};
+  base.forEach(x=>x.o=opens(x.e[4],ara));
+  if(nomesObertes){base=base.filter(x=>x.o!==false);buit='Cap gasolinera oberta ara amb aquests filtres.'}
+  const ordre=(SORT==='dist'&&POS)?(a,b)=>a.d-b.d:(a,b)=>a.e[f]-b.e[f]||(a.d??0)-(b.d??0);
+  base.sort(ordre);
+  const rows=base.slice(0,40);
+  let millor=-1;
+  rows.forEach((x,i)=>{if(millor<0||x.e[f]<rows[millor].e[f])millor=i});
+  rows.forEach((x,i)=>x.best=(i===millor));
+  return {f,rows,buit};
+}
+
+function pintaLlista({f,rows,buit}){
+  $('list').innerHTML=rows.map(x=>{
+    const e=x.e;
+    const tag=x.o===true?'<span class="tag ok">● Obert</span>':x.o===false?'<span class="tag no">● Tancat</span>':'';
+    return `<article class="card${x.best?' best':''}">
+      <div class="info">
+        ${x.best?'<div class="eyebrow">La més barata</div>':''}
+        <div class="nom">${esc(e[0]||'Gasolinera')}</div>
+        <div class="det">${esc(e[1])}, ${esc(e[2])}</div>
+        <div class="meta">${tag}<span class="hor">${esc(e[4])}</span></div>
+        <a class="go" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${e[5]},${e[6]}">Com arribar-hi →</a>
+      </div>
+      <div class="dreta"><div class="preu">${fmt(e[f])}<small> €/L</small></div>
+      ${x.d==null?'':`<div class="dist">${x.d.toFixed(1).replace('.',',')} km</div>`}</div>
+    </article>`}).join('')||'<div class="msg">'+esc(buit)+'</div>';
+}
+
+function tileUrl(){
+  const fosc=matchMedia('(prefers-color-scheme: dark)').matches;
+  return 'https://{s}.basemaps.cartocdn.com/'+(fosc?'dark_all':'light_all')+'/{z}/{x}/{y}{r}.png';
+}
+function iniciaMapa(){
+  if(MAP)return true;
+  if(!window.L){$('map').innerHTML='<div class="msg">No s\'ha pogut carregar el mapa. Comprova la connexió.</div>';return false}
+  MAP=L.map('map').setView([40.2,-3.7],6);
+  TILES=L.tileLayer(tileUrl(),{subdomains:'abcd',maxZoom:19,attribution:'© OpenStreetMap · © CARTO'}).addTo(MAP);
+  LAYER=L.layerGroup().addTo(MAP);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>TILES.setUrl(tileUrl()));
+  return true;
+}
+function pintaMapa({f,rows}){
+  if(!iniciaMapa())return;
+  MAP.invalidateSize();
+  LAYER.clearLayers(); if(POSM){POSM.remove();POSM=null}
+  const pts=[];
+  rows.forEach(x=>{
+    const e=x.e;
+    const ic=L.divIcon({className:'pinwrap',html:`<div class="pin${x.best?' best':''}">${fmt(e[f])}</div>`,iconSize:[0,0]});
+    L.marker([e[5],e[6]],{icon:ic,zIndexOffset:x.best?1000:0}).addTo(LAYER).bindPopup(
+      `<div class="pop"><b>${esc(e[0]||'Gasolinera')}</b><br>${esc(e[1])}, ${esc(e[2])}<br>${fmt(e[f])} €/L`+
+      (x.d==null?'':' · '+x.d.toFixed(1).replace('.',',')+' km')+
+      `<br><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${e[5]},${e[6]}">Com arribar-hi →</a></div>`);
+    pts.push([e[5],e[6]]);
+  });
+  if(POS){POSM=L.circleMarker([POS.lat,POS.lon],{radius:8,color:'#fff',weight:3,fillColor:'#2563eb',fillOpacity:1}).addTo(MAP);pts.push([POS.lat,POS.lon])}
+  if(pts.length>1)MAP.fitBounds(pts,{padding:[30,30],maxZoom:15});
+  else if(pts.length===1)MAP.setView(pts[0],15);
+}
+
 function render(){
   if(!DATA)return;
   $('upd').textContent='Dades del Ministeri: '+DATA.actualitzat;
-  const f=+$('fuel').value, radi=+$('radi').value, prov=$('prov').value;
-  let rows=[], buit='';
-  if(POS){
-    rows=DATA.e.filter(e=>e[f]!=null).map(e=>({e,d:km(POS.lat,POS.lon,e[5],e[6])})).filter(x=>x.d<=radi);
-    buit='Cap gasolinera en '+radi+' km. Prova un radi més gran.';
-  }else if(prov!==''){
-    const [t,i]=prov.split(':'), k=t==='c'?11:3;
-    rows=DATA.e.filter(e=>e[f]!=null&&e[k]==+i).map(e=>({e,d:null}));
-    buit='Cap resultat en aquesta zona.';
-  }else{
-    $('list').innerHTML='<div class="msg">'+esc(ERR||'Toca el botó per veure les més barates a prop teu.')+'</div>';
-    return;
-  }
-  rows.sort((a,b)=>a.e[f]-b.e[f]||(a.d??0)-(b.d??0));
-  rows=rows.slice(0,40);
-  $('list').innerHTML=rows.map((x,i)=>{const e=x.e;return `
-    <div class="card ${i==0?'best':''}">
-      <div><div class="nom">${esc(e[0])}</div>
-      <div class="det">${esc(e[1])}, ${esc(e[2])}</div>
-      <div class="det">${esc(e[4])}</div>
-      <a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${e[5]},${e[6]}">Com arribar-hi</a></div>
-      <div class="dreta"><div class="preu">${e[f].toFixed(3)} €</div>
-      ${x.d==null?'':`<div class="det">${x.d.toFixed(1)} km</div>`}</div>
-    </div>`}).join('')||'<div class="msg">'+esc(buit)+'</div>';
+  $('sDist').disabled=!POS;
+  if(!POS&&SORT==='dist')SORT='preu';
+  $('sPreu').classList.toggle('on',SORT==='preu');
+  $('sDist').classList.toggle('on',SORT==='dist');
+  const r=calcula();
+  pintaLlista(r);
+  if(VIEW==='map')pintaMapa(r);
+}
+function posaVista(v){
+  VIEW=v;
+  $('vList').classList.toggle('on',v==='list');$('vMap').classList.toggle('on',v==='map');
+  $('list').hidden=v!=='list';$('mapbox').hidden=v!=='map';
+  render();
 }
 function demanaUbicacio(){
-  if(!navigator.geolocation){ERR='Aquest navegador no pot donar la ubicació. Tria una província.';render();return}
+  if(!navigator.geolocation){ERR='Aquest navegador no pot donar la ubicació. Tria una comarca o província.';render();return}
   $('list').innerHTML='<div class="msg">Buscant la teva ubicació…</div>';
   navigator.geolocation.getCurrentPosition(p=>{
     POS={lat:p.coords.latitude,lon:p.coords.longitude};ERR='';$('prov').value='';render();
   },()=>{
-    POS=null;ERR='No he pogut obtenir la ubicació. Permet-la al navegador o tria una província.';render();
+    POS=null;ERR='No he pogut obtenir la ubicació. Permet-la al navegador o tria una comarca o província.';render();
   },{enableHighAccuracy:false,timeout:15000,maximumAge:300000});
 }
 async function carrega(){
@@ -101,15 +275,23 @@ async function carrega(){
     DATA=await r.json();
     const com=DATA.comarques||[];
     $('prov').innerHTML='<option value="">…o tria una comarca o província</option>'+
-      (com.length?'<optgroup label="Comarques de Catalunya">'+
-        com.map((c,i)=>`<option value="c:${i}">${esc(c)}</option>`).join('')+'</optgroup>':'')+
-      '<optgroup label="Províncies">'+
-        DATA.ordre.map(i=>`<option value="p:${i}">${esc(DATA.provincies[i])}</option>`).join('')+'</optgroup>';
+      (com.length?'<optgroup label="Comarques de Catalunya">'+com.map((c,i)=>`<option value="c:${i}">${esc(c)}</option>`).join('')+'</optgroup>':'')+
+      '<optgroup label="Províncies">'+DATA.ordre.map(i=>`<option value="p:${i}">${esc(DATA.provincies[i])}</option>`).join('')+'</optgroup>';
     render();
   }catch(e){$('upd').textContent='Error: '+e.message}
 }
+
+const gf=llegeix('fuel'), gr=llegeix('radi');
+if(gf&&[...$('fuel').options].some(o=>o.value===gf))$('fuel').value=gf;
+if(gr&&[...$('radi').options].some(o=>o.value===gr))$('radi').value=gr;
 $('loc').onclick=demanaUbicacio;
-$('fuel').onchange=render;$('radi').onchange=render;
-$('prov').onchange=()=>{if($('prov').value!==''){POS=null}render()};
+$('fuel').onchange=()=>{guarda('fuel',$('fuel').value);render()};
+$('radi').onchange=()=>{guarda('radi',$('radi').value);render()};
+$('prov').onchange=()=>{if($('prov').value!=='')POS=null;render()};
+$('open').onchange=render;
+$('sPreu').onclick=()=>{SORT='preu';render()};
+$('sDist').onclick=()=>{if(POS){SORT='dist';render()}};
+$('vList').onclick=()=>posaVista('list');
+$('vMap').onclick=()=>posaVista('map');
 carrega().then(demanaUbicacio);
 </script></body></html>
