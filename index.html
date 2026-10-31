@@ -24,6 +24,7 @@
  .preu{font-size:1.3rem;font-weight:700}
  a{color:var(--link);font-size:.9rem;text-decoration:none;font-weight:600}
  .msg{color:var(--mut);padding:12px 0}
+ footer{margin-top:24px;padding-top:12px;border-top:1px solid var(--mut);color:var(--mut);font-size:.8rem;text-align:center;line-height:1.5}
 </style></head><body>
 <h1>⛽ Gasolineres barates</h1>
 <div class="sub" id="upd">Carregant…</div>
@@ -44,6 +45,9 @@
 </div>
 <select id="prov" style="width:100%;margin-bottom:12px"><option value="">…o tria una comarca o província</option></select>
 <div id="list"></div>
+<footer>
+ Fet per Alexis · 2026 · v1.0<br>
+</footer>
 <script>
 let DATA=null, POS=null, ERR='';
 const $=id=>document.getElementById(id);
