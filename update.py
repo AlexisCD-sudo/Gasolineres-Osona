@@ -43,14 +43,28 @@ def num(v):
 
 
 def fetch():
+    ctx = ssl.create_default_context()
+    ctx.options |= 0x4  # OP_LEGACY_SERVER_CONNECT
+    ctx.maximum_version = ssl.TLSVersion.TLSv1_2
+    try:
+        ctx.set_ciphers("DEFAULT:@SECLEVEL=1")
+    except ssl.SSLError:
+        pass
     req = urllib.request.Request(API, headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"})
-    for attempt in range(4):
+    for attempt in range(3):
         try:
-            with urllib.request.urlopen(req, timeout=60) as r:
+            with urllib.request.urlopen(req, timeout=60, context=ctx) as r:
                 return json.loads(r.read().decode("utf-8-sig"))
         except Exception as ex:
-            print("intent", attempt + 1, "ha fallat:", ex)
-            time.sleep(10 * (attempt + 1))
+            print("urllib intent", attempt + 1, "ha fallat:", ex)
+        try:
+            out = subprocess.run(
+                ["curl", "-sS", "--fail", "--tlsv1.2", "-A", "Mozilla/5.0", "-m", "90", API],
+                capture_output=True, check=True)
+            return json.loads(out.stdout.decode("utf-8-sig"))
+        except Exception as ex:
+            print("curl intent", attempt + 1, "ha fallat:", ex)
+        time.sleep(10 * (attempt + 1))
     raise SystemExit("No s'ha pogut descarregar l'API del Ministeri")
 
 
