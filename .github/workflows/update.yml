@@ -6,23 +6,36 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["update.py", ".github/workflows/update.yml"]
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 jobs:
-  update:
+  deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: python update.py
-      - name: Desa data.json
+      - name: Prepara la web
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add data.json
-          git diff --staged --quiet || (git commit -m "Actualitza preus" && git push)
+          mkdir site
+          cp index.html manifest.webmanifest *.png site/
+          mv data.json site/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
