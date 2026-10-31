@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ca"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gasolineres Osona</title>
+<style>
+ :root{--bg:#f3f4f6;--card:#fff;--fg:#17181a;--mut:#6b7280;--ok:#15803d;--link:#2563eb}
+ @media (prefers-color-scheme:dark){:root{--bg:#111315;--card:#1b1e21;--fg:#eceef0;--mut:#9aa1a9;--ok:#4ade80;--link:#7aa7ff}}
+ body{font-family:system-ui,sans-serif;max-width:640px;margin:0 auto;padding:16px;background:var(--bg);color:var(--fg)}
+ h1{font-size:1.3rem;margin:0 0 4px}.sub{color:var(--mut);font-size:.85rem;margin-bottom:12px}
+ select{width:100%;padding:10px;font-size:1rem;border-radius:8px;border:1px solid var(--mut);background:var(--card);color:var(--fg);margin-bottom:12px}
+ .card{background:var(--card);border-radius:12px;padding:12px 14px;margin-bottom:10px;display:flex;justify-content:space-between;gap:12px}
+ .card.best{outline:2px solid var(--ok)}
+ .nom{font-weight:600}.det{color:var(--mut);font-size:.85rem}
+ .preu{font-size:1.3rem;font-weight:700;white-space:nowrap}
+ a{color:var(--link);font-size:.85rem;text-decoration:none}
+</style></head><body>
+<h1>⛽ Gasolineres d'Osona</h1>
+<div class="sub" id="upd">Carregant…</div>
+<select id="fuel">
+ <option value="gasolina95">Gasolina 95</option>
+ <option value="gasolina98">Gasolina 98</option>
+ <option value="diesel">Dièsel</option>
+ <option value="dieselplus">Dièsel Premium</option>
+</select>
+<div id="list"></div>
+<script>
+let DATA=null;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function render(){
+  const f=document.getElementById('fuel').value;
+  const rows=DATA.gasolineres.filter(g=>g.preus[f]!=null).sort((a,b)=>a.preus[f]-b.preus[f]);
+  document.getElementById('upd').textContent='Dades del Ministeri: '+DATA.actualitzat;
+  document.getElementById('list').innerHTML=rows.map((g,i)=>`
+    <div class="card ${i==0?'best':''}">
+      <div><div class="nom">${esc(g.nom)}</div>
+      <div class="det">${esc(g.adreca)}, ${esc(g.municipi)}</div>
+      <div class="det">${esc(g.horari)}</div>
+      ${g.lat?`<a target="_blank" rel="noopener" href="https://www.google.com/maps?q=${g.lat},${g.lon}">Com arribar-hi</a>`:''}</div>
+      <div class="preu">${g.preus[f].toFixed(3)} €</div>
+    </div>`).join('')||'Cap resultat';
+}
+async function load(){
+  try{
+    const r=await fetch('data.json?'+Date.now()); if(!r.ok) throw new Error('data.json no disponible encara');
+    DATA=await r.json(); render();
+  }catch(e){document.getElementById('upd').textContent='Error: '+e.message}
+}
+document.getElementById('fuel').onchange=()=>DATA&&render();
+load(); setInterval(load,600000);
+</script></body></html>
