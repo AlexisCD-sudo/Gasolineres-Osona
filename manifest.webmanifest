@@ -1,6 +1,6 @@
 {
-  "name": "Gasolineres Econòmiques",
-  "short_name": "Gasolineres",
+  "name": "Benzineres Econòmiques",
+  "short_name": "Benzineres",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#0f766e",
@@ -10,4 +10,3 @@
     {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"}
   ]
 }
-
