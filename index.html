@@ -91,6 +91,10 @@
  .pub{font-size:.78rem;color:var(--mut);text-decoration:line-through;font-variant-numeric:tabular-nums}
  .card.best .pub{color:#cfe9e5}
  .tag.soci{color:var(--brand)}
+ #instBox{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+ #instBox .main{margin-bottom:0}
+ .hint{background:var(--chip);border-radius:12px;padding:10px 12px;font-size:.88rem;color:var(--ink);text-align:left;line-height:1.5}
+ .hint svg{width:1.1em;height:1.1em;vertical-align:-.2em}
  [hidden]{display:none!important}
 </style></head><body>
 <header class="top"><div class="wrap">
@@ -134,7 +138,11 @@
  <div id="mapbox" hidden><div id="map"></div></div>
 </main>
 <footer class="wrap">
- Fet per Alexis · 2026 · v1.4<br>
+ <div id="instBox" hidden>
+  <button class="main" id="install" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Afegeix a la pantalla d'inici</button>
+  <div class="hint" id="hint" hidden></div>
+ </div>
+ Fet per Alexis · 2026 · v1.5<br>
  Dades: Ministeri per a la Transició Ecològica<br>
  Mapa: © OpenStreetMap
 </footer>
@@ -364,5 +372,26 @@ $('sPreu').onclick=()=>{SORT='preu';render()};
 $('sDist').onclick=()=>{if(POS){SORT='dist';render()}};
 $('vList').onclick=()=>posaVista('list');
 $('vMap').onclick=()=>posaVista('map');
+// ---- Afegeix a la pantalla d'inici
+const UA=navigator.userAgent;
+const esIOS=/iphone|ipad|ipod/i.test(UA)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const esSafariIOS=esIOS&&!/crios|fxios|edgios|opios/i.test(UA);
+const jaInstalada=()=>{try{return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}catch(e){return false}};
+let DEF=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();DEF=e});
+window.addEventListener('appinstalled',()=>{$('instBox').hidden=true});
+$('instBox').hidden=jaInstalada();
+$('install').onclick=async()=>{
+  if(DEF){
+    try{DEF.prompt();await DEF.userChoice}catch(e){}
+    DEF=null;return;
+  }
+  const share='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>';
+  $('hint').innerHTML=esIOS
+    ?(esSafariIOS?'Toca el botó Compartir '+share+' de Safari i tria <b>Afegeix a la pantalla d\'inici</b>.'
+                 :'Obre aquesta pàgina a <b>Safari</b>: a l\'iPhone és l\'únic navegador que la pot afegir a l\'inici.')
+    :'Obre el menú del navegador (<b>⋮</b> o <b>☰</b>) i tria <b>Instal·la</b> o <b>Afegeix a la pantalla d\'inici</b>.';
+  $('hint').hidden=!$('hint').hidden;
+};
 carrega().then(demanaUbicacio);
 </script></body></html>
