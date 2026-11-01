@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ca"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Gasolineres Barates</title>
+<title>Gasolineres Econòmiques</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0f766e">
@@ -95,7 +95,7 @@
 </style></head><body>
 <header class="top"><div class="wrap">
  <img class="logo" src="apple-touch-icon.png" alt="" width="54" height="54">
- <div><h1>Gasolineres barates</h1><div class="sub" id="upd">Carregant…</div></div>
+ <div><h1>Gasolineres econòmiques</h1><div class="sub" id="upd">Carregant…</div></div>
 </div></header>
 <main class="wrap">
  <section class="panel">
@@ -234,7 +234,7 @@ function calcula(){
     const [t,i]=z.split(':'), k=t==='c'?11:3;
     base=DATA.e.filter(e=>e[f]!=null&&e[k]==+i).map(e=>({e,d:null}));
     buit='Cap resultat en aquesta zona.';
-  }else return {f,rows:[],buit:ERR||'Toca el botó per veure les més barates a prop teu.'};
+  }else return {f,rows:[],buit:ERR||'Toca el botó per veure les més econòmiques a prop teu.'};
   base.forEach(x=>{
     x.o=opens(x.e[4],ara);
     const dd=descompte(reglesActives(),x.e[0],MIN);
@@ -256,7 +256,7 @@ function pintaLlista({f,rows,buit}){
     const tag=(x.soci?'<span class="tag soci">'+(x.nit?'Preu de soci nocturn':'Preu de soci')+'</span>':'')+(x.o===true?'<span class="tag ok">● Obert</span>':x.o===false?'<span class="tag no">● Tancat</span>':'');
     return `<article class="card${x.best?' best':''}">
       <div class="info">
-        ${x.best?'<div class="eyebrow">La més barata</div>':''}
+        ${x.best?'<div class="eyebrow">La més econòmica</div>':''}
         <div class="nom">${esc(e[0]||'Gasolinera')}</div>
         <div class="det">${esc(e[1])}, ${esc(e[2])}</div>
         <div class="meta">${tag}<span class="hor">${esc(e[4])}</span></div>
