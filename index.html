@@ -44,7 +44,8 @@
  .seg button.on{background:var(--brand);color:var(--on-brand);font-weight:600}
  .seg button:disabled{opacity:.4;cursor:default}
  label.chk{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--mut)}
- label.chk input{width:18px;height:18px;accent-color:var(--brand)}
+ label.chk input{width:18px;height:18px;accent-color:var(--brand);flex:none}
+ label.chk small{font-size:.78rem;opacity:.85}
  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;justify-content:space-between;gap:14px}
  .card+.card{margin-top:10px}
  .card.best{background:linear-gradient(135deg,var(--hero1),var(--hero2));color:#fff;border:none}
@@ -75,6 +76,21 @@
  @media (prefers-color-scheme:dark){#map .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9)}}
  .pop b{font-family:var(--disp)}.pop a{font-weight:600}
  footer{margin-top:22px;padding:14px 0 calc(18px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);color:var(--mut);font-size:.8rem;text-align:center;line-height:1.6}
+ details.soci{border-top:1px solid var(--line);padding-top:8px}
+ details.soci summary{cursor:pointer;font-weight:600;font-size:.92rem;list-style:none;display:flex;justify-content:space-between;align-items:center}
+ details.soci summary::-webkit-details-marker{display:none}
+ details.soci summary::after{content:'＋';color:var(--mut)}
+ details.soci[open] summary::after{content:'－'}
+ .soci p{font-size:.82rem;color:var(--mut);margin:8px 0}
+ .soci .row input{font:inherit;font-size:.95rem;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);min-width:0}
+ .soci .row input.cts{flex:0 0 96px}
+ .soci .row input.nit{width:100%}
+ .soci .row button{flex:0 0 auto;font:inherit;font-weight:600;padding:10px 14px;border-radius:10px;border:none;background:var(--brand);color:var(--on-brand);cursor:pointer}
+ .regla{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--chip);font-size:.9rem;margin-top:8px}
+ .regla button{background:none;border:none;color:var(--mut);font-size:1.1rem;cursor:pointer;padding:2px 8px}
+ .pub{font-size:.78rem;color:var(--mut);text-decoration:line-through;font-variant-numeric:tabular-nums}
+ .card.best .pub{color:#cfe9e5}
+ .tag.soci{color:var(--brand)}
  [hidden]{display:none!important}
 </style></head><body>
 <header class="top"><div class="wrap">
@@ -99,13 +115,26 @@
    <div class="seg" role="group" aria-label="Ordre"><button id="sPreu" class="on">Preu</button><button id="sDist">Distància</button></div>
    <label class="chk"><input type="checkbox" id="open"> Només obertes</label>
   </div>
+  <label class="chk"><input type="checkbox" id="socis" checked> <span>Preus amb targeta de soci<br><small>Esclat Oil: −5 cts/L, i −7 cts de 22 a 8 h a les estacions que ho tenen</small></span></label>
+  <details class="soci" id="soci">
+   <summary>Altres targetes de fidelitat</summary>
+   <p>Els preus del Ministeri són els preus públics. Si tens la targeta d'una altra marca, indica'n el descompte en cèntims per litre. Es guarda només en aquest mòbil.</p>
+   <div class="row">
+    <input id="sMarca" type="text" placeholder="Marca, ex. Esclat Oil" autocomplete="off" aria-label="Marca">
+    <input id="sCts" class="cts" type="text" inputmode="decimal" placeholder="cts/L" aria-label="Descompte en cèntims per litre">
+    <button id="sAdd" type="button">Afegeix</button>
+   </div>
+   <div class="row" style="margin-top:8px"><input id="sNit" class="nit" type="text" inputmode="decimal" placeholder="Extra nocturn 22–8 h (cts/L), opcional" aria-label="Descompte extra nocturn en cèntims per litre"></div>
+   <p id="sNota">El descompte nocturn només val a algunes estacions. S'aplica a totes les de la marca entre les 22:00 i les 08:00.</p>
+   <div id="sList"></div>
+  </details>
  </section>
  <div class="seg" role="group" aria-label="Vista"><button id="vList" class="on">Llista</button><button id="vMap">Mapa</button></div>
  <div id="list"></div>
  <div id="mapbox" hidden><div id="map"></div></div>
 </main>
 <footer class="wrap">
- Fet per Alexis · 2026 · v1.1<br>
+ Fet per Alexis · 2026 · v1.4<br>
  Dades: Ministeri per a la Transició Ecològica<br>
  Mapa: © OpenStreetMap
 </footer>
@@ -162,18 +191,41 @@ function opens(h,now){
   }
   return open?true:(covered?false:null);
 }
+const nrm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+function descompte(regles,rotul,minuts){
+  const n=nrm(rotul); if(!n)return {cts:0,nit:false};
+  const nit=minuts>=1320||minuts<480;
+  let best={cts:0,nit:false};
+  for(const r of regles){
+    if(!r.k||!n.includes(r.k))continue;
+    const extra=nit&&r.nit>0;
+    const total=r.cts+(extra?r.nit:0);
+    if(total>best.cts)best={cts:total,nit:extra};
+  }
+  return best;
+}
 // ==PURE-END==
 
 const $=id=>document.getElementById(id);
-let DATA=null, POS=null, ERR='', VIEW='list', SORT='preu';
-let MAP=null, LAYER=null, POSM=null;
-
 function guarda(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 function llegeix(k){try{return localStorage.getItem(k)}catch(e){return null}}
+let DATA=null, POS=null, ERR='', VIEW='list', SORT='preu';
+let MAP=null, LAYER=null, POSM=null;
+// Descomptes de sèrie amb targeta de soci (cts/L). nit = extra de 22:00 a 08:00 a estacions seleccionades.
+const REGLES_BASE=[{k:'esclatoil',nom:'Esclat Oil',cts:5,nit:2}];
+let SOCI_ON=llegeix('socis')!=='0';
+const reglesActives=()=>SOCI_ON?REGLES.filter(r=>!REGLES_BASE.some(b=>b.k===r.k)).concat(REGLES_BASE):[];
+let REGLES=[];
+try{const r=JSON.parse(llegeix('soci')||'[]');if(Array.isArray(r))REGLES=r.filter(x=>x&&x.k&&x.nom&&x.cts>0&&x.cts<=50&&!(x.nit<0||x.nit>50))}catch(e){}
+function pintaRegles(){
+  $('sList').innerHTML=REGLES.map(r=>`<div class="regla"><span><b>${esc(r.nom)}</b> · −${String(r.cts).replace('.',',')} cts/L${r.nit>0?' (+'+String(r.nit).replace('.',',')+' de 22 a 8 h)':''}</span><button type="button" data-k="${esc(r.k)}" aria-label="Elimina ${esc(r.nom)}">✕</button></div>`).join('');
+  $('soci').querySelector('summary').textContent='Altres targetes de fidelitat'+(REGLES.length?' ('+REGLES.length+')':'');
+}
+
 
 function calcula(){
   const f=+$('fuel').value, radi=+$('radi').value, z=$('prov').value, nomesObertes=$('open').checked;
-  const ara=new Date();
+  const ara=new Date(), MIN=ara.getHours()*60+ara.getMinutes();
   let base, buit;
   if(POS){
     base=DATA.e.filter(e=>e[f]!=null).map(e=>({e,d:km(POS.lat,POS.lon,e[5],e[6])})).filter(x=>x.d<=radi);
@@ -183,13 +235,17 @@ function calcula(){
     base=DATA.e.filter(e=>e[f]!=null&&e[k]==+i).map(e=>({e,d:null}));
     buit='Cap resultat en aquesta zona.';
   }else return {f,rows:[],buit:ERR||'Toca el botó per veure les més barates a prop teu.'};
-  base.forEach(x=>x.o=opens(x.e[4],ara));
+  base.forEach(x=>{
+    x.o=opens(x.e[4],ara);
+    const dd=descompte(reglesActives(),x.e[0],MIN);
+    x.pub=x.e[f]; x.soci=dd.cts>0; x.nit=dd.nit; x.p=dd.cts>0?Math.max(0,x.pub-dd.cts/100):x.pub;
+  });
   if(nomesObertes){base=base.filter(x=>x.o!==false);buit='Cap gasolinera oberta ara amb aquests filtres.'}
-  const ordre=(SORT==='dist'&&POS)?(a,b)=>a.d-b.d:(a,b)=>a.e[f]-b.e[f]||(a.d??0)-(b.d??0);
+  const ordre=(SORT==='dist'&&POS)?(a,b)=>a.d-b.d:(a,b)=>a.p-b.p||(a.d??0)-(b.d??0);
   base.sort(ordre);
   const rows=base.slice(0,40);
   let millor=-1;
-  rows.forEach((x,i)=>{if(millor<0||x.e[f]<rows[millor].e[f])millor=i});
+  rows.forEach((x,i)=>{if(millor<0||x.p<rows[millor].p)millor=i});
   rows.forEach((x,i)=>x.best=(i===millor));
   return {f,rows,buit};
 }
@@ -197,7 +253,7 @@ function calcula(){
 function pintaLlista({f,rows,buit}){
   $('list').innerHTML=rows.map(x=>{
     const e=x.e;
-    const tag=x.o===true?'<span class="tag ok">● Obert</span>':x.o===false?'<span class="tag no">● Tancat</span>':'';
+    const tag=(x.soci?'<span class="tag soci">'+(x.nit?'Preu de soci nocturn':'Preu de soci')+'</span>':'')+(x.o===true?'<span class="tag ok">● Obert</span>':x.o===false?'<span class="tag no">● Tancat</span>':'');
     return `<article class="card${x.best?' best':''}">
       <div class="info">
         ${x.best?'<div class="eyebrow">La més barata</div>':''}
@@ -206,7 +262,8 @@ function pintaLlista({f,rows,buit}){
         <div class="meta">${tag}<span class="hor">${esc(e[4])}</span></div>
         <a class="go" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${e[5]},${e[6]}">Com arribar-hi →</a>
       </div>
-      <div class="dreta"><div class="preu">${fmt(e[f])}<small> €/L</small></div>
+      <div class="dreta"><div class="preu">${fmt(x.p)}<small> €/L</small></div>
+      ${x.soci?`<div class="pub">públic ${fmt(x.pub)}</div>`:''}
       ${x.d==null?'':`<div class="dist">${x.d.toFixed(1).replace('.',',')} km</div>`}</div>
     </article>`}).join('')||'<div class="msg">'+esc(buit)+'</div>';
 }
@@ -226,9 +283,9 @@ function pintaMapa({f,rows}){
   const pts=[];
   rows.forEach(x=>{
     const e=x.e;
-    const ic=L.divIcon({className:'pinwrap',html:`<div class="pin${x.best?' best':''}">${fmt(e[f])}</div>`,iconSize:[0,0]});
+    const ic=L.divIcon({className:'pinwrap',html:`<div class="pin${x.best?' best':''}">${fmt(x.p)}</div>`,iconSize:[0,0]});
     L.marker([e[5],e[6]],{icon:ic,zIndexOffset:x.best?1000:0}).addTo(LAYER).bindPopup(
-      `<div class="pop"><b>${esc(e[0]||'Gasolinera')}</b><br>${esc(e[1])}, ${esc(e[2])}<br>${fmt(e[f])} €/L`+
+      `<div class="pop"><b>${esc(e[0]||'Gasolinera')}</b><br>${esc(e[1])}, ${esc(e[2])}<br>${fmt(x.p)} €/L`+(x.soci?` (${x.nit?'soci nocturn':'soci'}; públic ${fmt(x.pub)})`:'')+
       (x.d==null?'':' · '+x.d.toFixed(1).replace('.',',')+' km')+
       `<br><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${e[5]},${e[6]}">Com arribar-hi →</a></div>`);
     pts.push([e[5],e[6]]);
@@ -281,6 +338,24 @@ const gf=llegeix('fuel'), gr=llegeix('radi');
 if(gf&&[...$('fuel').options].some(o=>o.value===gf))$('fuel').value=gf;
 if(gr&&[...$('radi').options].some(o=>o.value===gr))$('radi').value=gr;
 $('loc').onclick=demanaUbicacio;
+$('socis').checked=SOCI_ON;
+$('socis').onchange=()=>{SOCI_ON=$('socis').checked;guarda('socis',SOCI_ON?'1':'0');render()};
+$('sAdd').onclick=()=>{
+  const nom=$('sMarca').value.trim(), cts=parseFloat($('sCts').value.replace(',','.')), k=nrm(nom);
+  const nitTxt=$('sNit').value.trim(), nit=nitTxt?parseFloat(nitTxt.replace(',','.')):0;
+  if(!k||!(cts>0&&cts<=50)){$('sCts').focus();return}
+  if(nitTxt&&!(nit>=0&&nit<=50)){$('sNit').focus();return}
+  REGLES=REGLES.filter(r=>r.k!==k).concat([{k,nom,cts,nit:nit||0}]);
+  guarda('soci',JSON.stringify(REGLES));
+  $('sMarca').value='';$('sCts').value='';$('sNit').value='';
+  pintaRegles();render();
+};
+$('sList').onclick=e=>{
+  const b=e.target.closest('button[data-k]'); if(!b)return;
+  REGLES=REGLES.filter(r=>r.k!==b.dataset.k);
+  guarda('soci',JSON.stringify(REGLES));pintaRegles();render();
+};
+pintaRegles();
 $('fuel').onchange=()=>{guarda('fuel',$('fuel').value);render()};
 $('radi').onchange=()=>{guarda('radi',$('radi').value);render()};
 $('prov').onchange=()=>{if($('prov').value!=='')POS=null;render()};
