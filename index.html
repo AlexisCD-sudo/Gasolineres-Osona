@@ -174,16 +174,16 @@
  Mapa: © OpenStreetMap
   Mapa: © OpenStreetMap
 
- <div class="visites">
+<div class="visites">
   <div class="visita">
-   <span>Visites totals</span>
-   <strong id="visitesTotal">—</strong>
+    <span>Visites totals</span>
+    <div id="visitesTotal"></div>
   </div>
   <div class="visita">
-   <span>Visites avui</span>
-   <strong id="visitesAvui">—</strong>
+    <span>Visites avui</span>
+    <div id="visitesAvui"></div>
   </div>
- </div>
+</div>
 </footer>
 <script>
 // ==PURE-START==
@@ -437,32 +437,35 @@ carrega().then(demanaUbicacio);
 <script data-goatcounter="https://benzineres.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
 <script>
-async function actualitzaComptadors(){
-  const avui = new Date();
-  const data = [
-    avui.getFullYear(),
-    String(avui.getMonth()+1).padStart(2,'0'),
-    String(avui.getDate()).padStart(2,'0')
-  ].join('-');
+(function esperaGoatCounter() {
+  if (window.goatcounter &&
+      typeof window.goatcounter.visit_count === 'function') {
 
-  const base = 'https://benzineres.goatcounter.com/counter/TOTAL.json';
+    const ara = new Date();
+    const avui = [
+      ara.getFullYear(),
+      String(ara.getMonth() + 1).padStart(2, '0'),
+      String(ara.getDate()).padStart(2, '0')
+    ].join('-');
 
-  try {
-    const [total, avuiRes] = await Promise.all([
-      fetch(base).then(r => r.json()),
-      fetch(base + '?start=' + data + '&end=' + data)
-        .then(r => r.json())
-    ]);
+    window.goatcounter.visit_count({
+      append: '#visitesTotal',
+      path: 'TOTAL',
+      no_branding: true
+    });
 
-    document.getElementById('visitesTotal').textContent = total.count;
-    document.getElementById('visitesAvui').textContent = avuiRes.count;
-  } catch(e) {
-    document.getElementById('visitesTotal').textContent = '—';
-    document.getElementById('visitesAvui').textContent = '—';
+    window.goatcounter.visit_count({
+      append: '#visitesAvui',
+      path: 'TOTAL',
+      start: avui,
+      end: avui,
+      no_branding: true
+    });
+
+  } else {
+    setTimeout(esperaGoatCounter, 100);
   }
-}
-
-actualitzaComptadors();
+})();
 </script>
 </body>
 </html>
