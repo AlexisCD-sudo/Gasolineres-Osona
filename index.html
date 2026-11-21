@@ -205,19 +205,6 @@
  Fet per Alexis · 2026 · v1.5<br>
  Dades: Ministeri per a la Transició Ecològica<br>
  Mapa: © OpenStreetMap
-  Mapa: © OpenStreetMap
-
-<div class="visites">
-  <div class="visita">
-    <span>Visites totals</span>
-    <div id="visitesTotal"></div>
-  </div>
-  <span class="separador">·</span>
-  <div class="visita">
-    <span>Avui</span>
-    <div id="visitesAvui"></div>
-  </div>
-</div>
 </footer>
 <script>
 // ==PURE-START==
@@ -470,36 +457,6 @@ carrega().then(demanaUbicacio);
 </script>
 <script data-goatcounter="https://benzineres.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
-<script>
-(function esperaGoatCounter() {
-  if (window.goatcounter &&
-      typeof window.goatcounter.visit_count === 'function') {
 
-    const ara = new Date();
-    const avui = [
-      ara.getFullYear(),
-      String(ara.getMonth() + 1).padStart(2, '0'),
-      String(ara.getDate()).padStart(2, '0')
-    ].join('-');
-
-    window.goatcounter.visit_count({
-      append: '#visitesTotal',
-      path: 'TOTAL',
-      no_branding: true
-    });
-
-    window.goatcounter.visit_count({
-      append: '#visitesAvui',
-      path: 'TOTAL',
-      start: avui,
-      end: avui,
-      no_branding: true
-    });
-
-  } else {
-    setTimeout(esperaGoatCounter, 100);
-  }
-})();
-</script>
 </body>
 </html>
