@@ -1,3 +1,4 @@
+
 name: Actualitza preus
 
 on:
@@ -17,25 +18,39 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python update.py
+
+      - name: Actualitza preus
+        run: python update.py
+
       - name: Prepara la web
         run: |
           mkdir site
           cp index.html manifest.webmanifest *.png site/
           mv data.json site/
+
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+
+      - name: Puja artifact de GitHub Pages
+        uses: actions/upload-pages-artifact@v3
         with:
           path: site
-      - id: deployment
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Publica a GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
