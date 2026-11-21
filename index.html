@@ -123,6 +123,39 @@
   font-variant-numeric:tabular-nums;
   color:var(--brand);
 }
+ .visites {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 14px auto 8px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.visita {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.visita span {
+  color: #94a3b8;
+}
+
+.visita div {
+  color: #0f766e;
+  font-weight: 700;
+}
+
+.visita a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.separador {
+  color: #cbd5e1;
+}
 </style></head><body>
 <header class="top"><div class="wrap">
  <img class="logo" src="apple-touch-icon.png" alt="" width="54" height="54">
@@ -179,8 +212,9 @@
     <span>Visites totals</span>
     <div id="visitesTotal"></div>
   </div>
+  <span class="separador">·</span>
   <div class="visita">
-    <span>Visites avui</span>
+    <span>Avui</span>
     <div id="visitesAvui"></div>
   </div>
 </div>
